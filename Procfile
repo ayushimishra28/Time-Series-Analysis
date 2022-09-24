@@ -1,0 +1,1 @@
+web: sh setup.sh && streamlit run 📊_Compare_Stocks.py
