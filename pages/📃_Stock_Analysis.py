@@ -3,7 +3,8 @@ import pandas as pd
 import yfinance as yf
 import plotly.graph_objects as go
 import datetime
-import talib as ta
+import ta
+import pandas_ta as pta
 import dateutil
 st.set_page_config(
         page_title="Stock Analysis",
@@ -107,7 +108,7 @@ else:
     
 
     def RSI(dataframe, num_period):
-        dataframe['RSI'] = ta.RSI(dataframe['Close'])
+        dataframe['RSI'] = pta.rsi(dataframe['Close'])
         dataframe = filter_data(dataframe,num_period)
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -139,7 +140,7 @@ else:
 
     def Moving_average(dataframe,num_period):
         
-        dataframe['SMA_50'] = ta.SMA(dataframe['Close'],50) 
+        dataframe['SMA_50'] = pta.sma(dataframe['Close'],50) 
         dataframe = filter_data(dataframe,num_period)
         fig = go.Figure()
         
@@ -165,7 +166,7 @@ else:
         return fig
     def Moving_average_candle_stick(dataframe,num_period):
     
-        dataframe['SMA_50'] = ta.SMA(dataframe['Close'],50) 
+        dataframe['SMA_50'] = pta.sma(dataframe['Close'],50) 
         dataframe = filter_data(dataframe,num_period)
         fig = go.Figure()
         fig.add_trace(go.Candlestick(x=dataframe.index,
@@ -182,9 +183,11 @@ else:
         ))
         
         return fig
+
     def MACD(dataframe, num_period):
-        macd, macd_signal, macd_hist = ta.MACD(dataframe['Close'])
-        macd, macd_signal, macd_hist = ta.MACD(dataframe['Close'])
+        macd = pta.macd(dataframe['Close']).iloc[:,0]
+        macd_signal = pta.macd(dataframe['Close']).iloc[:,1]
+        macd_hist = pta.macd(dataframe['Close']).iloc[:,2]
         dataframe['MACD'] = macd
         dataframe['MACD Signal'] = macd_signal
         dataframe['MACD Hist'] = macd_hist
@@ -213,54 +216,9 @@ else:
         )
         return fig
     
-    def linearReg_candle_stick(dataframe,num_period):
-        
-        dataframe['Linearreg'] = ta.LINEARREG(dataframe['Close'],100) 
-        dataframe = filter_data(dataframe,num_period)
-        fig = go.Figure()
-        fig.add_trace(go.Candlestick(x=dataframe.index,
-                        open=dataframe['Open'], high=dataframe['High'],
-                        low=dataframe['Low'], close=dataframe['Close']))
-    
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['Linearreg'],
-                            mode='lines', name='Linear Reg 100',line = dict( width=2,color = 'purple')))
-        fig.add_trace(go.Bar(name='Volume (in millions)', x=dataframe.index, y=dataframe['Volume']/1000000,marker_color='#79da84',  marker_line=dict(width=0.2, color='#0078ff')))
-        fig.update_xaxes(rangeslider_visible=True)
-        fig.update_layout(height = 500,margin=dict(l=0, r=20, t=20, b=0), plot_bgcolor = 'white',paper_bgcolor = '#e1efff',legend=dict(
-        yanchor="top",
-        xanchor="right"
-        ))
-        
-        return fig
-
-    def LinearReg(dataframe,num_period):
-        
-        dataframe['Linearreg'] = ta.LINEARREG(dataframe['Close'],100) 
-        dataframe = filter_data(dataframe,num_period)
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['Open'],
-                            mode='lines',
-                            name='Open',line = dict( width=2,color = '#5ab7ff')))
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['Close'],
-                            mode='lines',
-                            name='Close',line = dict( width=2,color = 'black')))
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['High'],
-                            mode='lines', name='High',line = dict( width=2,color = '#0078ff')))
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['Low'],
-                            mode='lines', name='Low',line = dict( width=2,color = 'red')))
-        fig.add_trace(go.Scatter(x=dataframe['Date'], y=dataframe['Linearreg'],
-                            mode='lines', name='Linear Reg 100',line = dict( width=2,color = 'purple')))
-        fig.add_trace(go.Bar(name='Volume (in millions)', x=dataframe['Date'], y=dataframe['Volume']/1000000,marker_color='#79da84',  marker_line=dict(width=0.2, color='#0078ff')))
-        fig.update_xaxes(rangeslider_visible=True)
-        fig.update_layout(height = 500,margin=dict(l=0, r=20, t=20, b=0), plot_bgcolor = 'white',paper_bgcolor = '#e1efff',legend=dict(
-        yanchor="top",
-        xanchor="right"
-        ))
-        
-        return fig
+   
     st.markdown("""<hr style="height:2px;border:none;color:#0078ff;background-color:#0078ff;" /> """, unsafe_allow_html=True)
-    
+
     st.markdown("""
         <style>
         div.stButton > button:first-child {
@@ -301,7 +259,7 @@ else:
     with col1:
         chart_type = st.selectbox('',('Candle','Line'))
     with col2:
-        indicators = st.selectbox('',('RSI', 'Moving Average','MACD','Linear Reg'))
+        indicators = st.selectbox('',('RSI', 'Moving Average','MACD'))
 
     ticker_ = yf.Ticker(ticker)
     new_df1 = ticker_.history(period = 'max')
@@ -330,10 +288,7 @@ else:
             st.plotly_chart(close_chart(data1, '1y'), use_container_width=True)
             st.plotly_chart(MACD(data1, '1y'), use_container_width=True)
 
-        if chart_type == 'Line' and indicators == 'Linear Reg':
-            st.plotly_chart(LinearReg(data1, '1y'), use_container_width=True)
-        if chart_type == 'Candle' and indicators == 'Linear Reg':
-            st.plotly_chart(linearReg_candle_stick(data1, '1y'), use_container_width=True)
+     
 
     else:
 
@@ -357,8 +312,3 @@ else:
         if chart_type == 'Line' and indicators == 'MACD':
             st.plotly_chart(close_chart(new_df1, num_period), use_container_width=True)
             st.plotly_chart(MACD(new_df1, num_period), use_container_width=True)
-            
-        if chart_type == 'Line' and indicators == 'Linear Reg':
-            st.plotly_chart(LinearReg(new_df1, num_period), use_container_width=True)
-        if chart_type == 'Candle' and indicators == 'Linear Reg':
-            st.plotly_chart(linearReg_candle_stick(new_df1, num_period), use_container_width=True)
